@@ -3,8 +3,10 @@ package com.application.archive;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FilePermission;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.AccessController;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
@@ -42,7 +44,11 @@ class CommonsArchiver implements Archiver {
     public File create(String archive, File destination, File... sources) throws IOException {
 
         IOUtils.requireDirectory(destination);
-
+        try{
+            AccessController.checkPermission(new FilePermission(destination.getAbsolutePath(), "read,write"));
+        }catch(SecurityException e) {
+            throw new IllegalArgumentException("Permission denied");
+        }
         File archiveFile = createNewArchiveFile(archive, getFilenameExtension(), destination);
 
         ArchiveOutputStream outputStream = null;
@@ -89,6 +95,9 @@ class CommonsArchiver implements Archiver {
 
             if (!entry.isDirectory()) {
                 IOUtils.copy(input, file);
+            }
+            else{
+                IOUtils.requireDirectory(file);
             }
 
             FileModeMapper.map(entry, file);
